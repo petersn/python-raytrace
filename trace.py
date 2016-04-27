@@ -5,7 +5,7 @@ import pygame
 import numpy
 from numpy import linalg, array
 
-WIDTH, HEIGHT = 800, 800
+WIDTH, HEIGHT = 200, 200
 
 def normalized(x):
 	return x / linalg.norm(x)
@@ -62,8 +62,8 @@ class Plane:
 		return Hit(hit, ray.direction, self.normal, reflection, approach_distance, self)
 
 class Scene:
-	dof_x = 2
-	dof_y = 2
+	dof_x = 3
+	dof_y = 3
 	dof_passes = dof_x * dof_y
 
 	def __init__(self):
@@ -85,12 +85,6 @@ class Scene:
 		hit = self.cast_test(ray)
 		if not hit:
 			return energy
-		# If the object is the plane, load from the texture.
-		if isinstance(hit.obj, Plane):
-			tex_x, tex_y = int(hit.point[0] * 100) + texture_size[0]/2, int(hit.point[1] * 100) + texture_size[1]/2
-			tex_x %= texture_size[0]
-			tex_y %= texture_size[1]
-			energy += numpy.array(map(float, texture.get_at((tex_x, tex_y))[:3])) / 255.0
 		# Cast shadow rays to each light.
 		for light in self.lights:
 			to_light = light.point - hit.point
@@ -106,14 +100,20 @@ class Scene:
 		if recursions > 0:
 			reflection_ray = Ray(hit.point, hit.reflection)
 			energy += 0.8 * self.color_ray(reflection_ray, recursions-1)
+		# If the object is the plane, load from the texture.
+		if isinstance(hit.obj, Plane):
+			tex_x, tex_y = int(hit.point[0] * 100) + texture_size[0]/2, int(hit.point[1] * 100) + texture_size[1]/2
+			tex_x %= texture_size[0]
+			tex_y %= texture_size[1]
+			energy *= numpy.array(map(float, texture.get_at((tex_x, tex_y))[:3])) / 255.0
 		return energy
 
 	def render(self, surface):
 		aspect_ratio = WIDTH / HEIGHT
 		camera_origin = array([0.0, -5.0, 1.0])
 		plane_height = 0.8
-		pof_distance = 4.5
-		aperture_size = 0.05 #0.4
+		pof_distance = 5.5
+		aperture_size = 0.08 #0.05 #0.4
 		for y in xrange(HEIGHT):
 			pygame.draw.line(screen, (255, 0, 0), (0, y+1), (WIDTH-1, y+1))
 			for x in xrange(WIDTH):
