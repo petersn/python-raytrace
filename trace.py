@@ -5,7 +5,7 @@ import pygame
 import numpy
 from numpy import linalg, array
 
-WIDTH, HEIGHT = 800, 800
+WIDTH, HEIGHT = 400, 400
 
 def normalized(x):
 	return x / linalg.norm(x)
@@ -62,8 +62,8 @@ class Plane:
 		return Hit(hit, ray.direction, self.normal, reflection, approach_distance, self)
 
 class Scene:
-	dof_x = 4
-	dof_y = 4
+	dof_x = 6
+	dof_y = 6
 	dof_passes = dof_x * dof_y
 
 	def __init__(self):
