@@ -4,7 +4,7 @@ import math, random
 import numpy
 from numpy import linalg, array
 
-WIDTH, HEIGHT = 100, 100
+WIDTH, HEIGHT = 800, 800
 
 def normalized(x):
 	return x / linalg.norm(x)
@@ -61,7 +61,9 @@ class Plane:
 		return Hit(hit, ray.direction, self.normal, reflection, approach_distance)
 
 class Scene:
-	dof_passes = 16
+	dof_x = 4
+	dof_y = 4
+	dof_passes = dof_x * dof_y
 
 	def __init__(self):
 		self.objects = []
@@ -103,22 +105,24 @@ class Scene:
 		aspect_ratio = WIDTH / HEIGHT
 		camera_origin = array([0.0, -5.0, 1.0])
 		plane_height = 0.8
-		pof_distance = 5.0
-		aperture_size = 0.2
+		pof_distance = 4.5
+		aperture_size = 0.4
 		for y in xrange(HEIGHT):
 			pygame.draw.line(screen, (255, 0, 0), (0, y+1), (WIDTH-1, y+1))
 			for x in xrange(WIDTH):
 				energy = array([0.0, 0.0, 0.0])
-				for dof_pass in xrange(self.dof_passes):
-					x_offset = random.uniform(-aperture_size, aperture_size)
-					y_offset = random.uniform(-aperture_size, aperture_size)
-					ray_direction = array([
-						aspect_ratio * ((x - WIDTH/2.0)/HEIGHT) * plane_height - x_offset / pof_distance,
-						1,
-						((HEIGHT/2.0 - y)/HEIGHT) * plane_height - y_offset / pof_distance,
-					])
-					ray = Ray(camera_origin + array([x_offset, 0, y_offset]), ray_direction)
-					energy += self.color_ray(ray, 2)
+				for dof_x in xrange(self.dof_x):
+					for dof_y in xrange(self.dof_y):
+						# The random.uniform is to add dither to hide the shifted copies of the image.
+						x_offset = aperture_size * (dof_x - self.dof_x / 2.0) + random.uniform(-aperture_size, aperture_size) / self.dof_x
+						y_offset = aperture_size * (dof_y - self.dof_y / 2.0) + random.uniform(-aperture_size, aperture_size) / self.dof_y
+						ray_direction = array([
+							aspect_ratio * ((x - WIDTH/2.0)/HEIGHT) * plane_height - x_offset / pof_distance,
+							1,
+							((HEIGHT/2.0 - y)/HEIGHT) * plane_height - y_offset / pof_distance,
+						])
+						ray = Ray(camera_origin + array([x_offset, 0, y_offset]), ray_direction)
+						energy += self.color_ray(ray, 2)
 				color = self.energy_to_color(energy)
 				surface.set_at((x, y), color)
 			pygame.display.update()
