@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-import math, random
+import math, random, time
+import pygame
 import numpy
 from numpy import linalg, array
 
@@ -14,8 +15,8 @@ class Ray:
 		self.origin, self.direction = origin, normalized(direction)
 
 class Hit:
-	def __init__(self, point, incoming, normal, reflection, travel):
-		self.point, self.incoming, self.normal, self.reflection, self.travel = point, incoming, normal, reflection, travel
+	def __init__(self, point, incoming, normal, reflection, travel, obj):
+		self.point, self.incoming, self.normal, self.reflection, self.travel, self.obj = point, incoming, normal, reflection, travel, obj
 
 class Light:
 	def __init__(self, point, color):
@@ -42,7 +43,7 @@ class Sphere:
 		hit = ray.origin + ray.direction * (base_d - root - 1e-2)
 		normal = normalized(hit - self.center)
 		reflection = normalized(ray.direction - (2 * normal.dot(ray.direction)) * normal)
-		return Hit(hit, ray.direction, normal, reflection, base_d - root)
+		return Hit(hit, ray.direction, normal, reflection, base_d - root, self)
 
 class Plane:
 	def __init__(self, material, normal, height):
@@ -58,11 +59,11 @@ class Plane:
 		approach_distance = origin_height / rate
 		hit = ray.origin + ray.direction * approach_distance
 		reflection = normalized(ray.direction - (2 * self.normal.dot(ray.direction)) * self.normal)
-		return Hit(hit, ray.direction, self.normal, reflection, approach_distance)
+		return Hit(hit, ray.direction, self.normal, reflection, approach_distance, self)
 
 class Scene:
-	dof_x = 4
-	dof_y = 4
+	dof_x = 2
+	dof_y = 2
 	dof_passes = dof_x * dof_y
 
 	def __init__(self):
@@ -84,6 +85,12 @@ class Scene:
 		hit = self.cast_test(ray)
 		if not hit:
 			return energy
+		# If the object is the plane, load from the texture.
+		if isinstance(hit.obj, Plane):
+			tex_x, tex_y = int(hit.point[0] * 100) + texture_size[0]/2, int(hit.point[1] * 100) + texture_size[1]/2
+			tex_x %= texture_size[0]
+			tex_y %= texture_size[1]
+			energy += numpy.array(map(float, texture.get_at((tex_x, tex_y))[:3])) / 255.0
 		# Cast shadow rays to each light.
 		for light in self.lights:
 			to_light = light.point - hit.point
@@ -95,7 +102,7 @@ class Scene:
 				lambertian_coef = hit.normal.dot(shadow_ray.direction)
 				phong_coef = max(0.0, hit.reflection.dot(shadow_ray.direction))**15.0
 				energy += raw_energy * (lambertian_coef + phong_coef)
-		# If we have recursions left do an idea reflection.
+		# If we have recursions left do an ideal reflection.
 		if recursions > 0:
 			reflection_ray = Ray(hit.point, hit.reflection)
 			energy += 0.8 * self.color_ray(reflection_ray, recursions-1)
@@ -106,7 +113,7 @@ class Scene:
 		camera_origin = array([0.0, -5.0, 1.0])
 		plane_height = 0.8
 		pof_distance = 4.5
-		aperture_size = 0.4
+		aperture_size = 0.05 #0.4
 		for y in xrange(HEIGHT):
 			pygame.draw.line(screen, (255, 0, 0), (0, y+1), (WIDTH-1, y+1))
 			for x in xrange(WIDTH):
@@ -122,7 +129,7 @@ class Scene:
 							((HEIGHT/2.0 - y)/HEIGHT) * plane_height - y_offset / pof_distance,
 						])
 						ray = Ray(camera_origin + array([x_offset, 0, y_offset]), ray_direction)
-						energy += self.color_ray(ray, 2)
+						energy += self.color_ray(ray, 4)
 				color = self.energy_to_color(energy)
 				surface.set_at((x, y), color)
 			pygame.display.update()
@@ -141,8 +148,9 @@ scene.objects.append(Plane(ground_mat, array([0.0, 0.0, 1.0]), 0.0))
 scene.lights.append(Light(array([-2.0, -2.0, 3.0]), 5 * array([1.0, 0.2, 0.2])))
 scene.lights.append(Light(array([ 2.0, -2.0, 3.0]), 5 * array([0.2, 1.0, 0.2])))
 scene.lights.append(Light(array([ 0.0,  0.0, 5.0]), 5 * array([0.2, 0.2, 1.0])))
+texture = pygame.image.load("texture.jpg")
+texture_size = texture.get_size()
 
-import pygame, time
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 start = time.time()
