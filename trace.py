@@ -5,7 +5,7 @@ import pygame
 import numpy
 from numpy import linalg, array
 
-WIDTH, HEIGHT = 200, 200
+WIDTH, HEIGHT = 800, 800
 
 def normalized(x):
 	return x / linalg.norm(x)
@@ -62,8 +62,8 @@ class Plane:
 		return Hit(hit, ray.direction, self.normal, reflection, approach_distance, self)
 
 class Scene:
-	dof_x = 3
-	dof_y = 3
+	dof_x = 4
+	dof_y = 4
 	dof_passes = dof_x * dof_y
 
 	def __init__(self):
@@ -113,7 +113,7 @@ class Scene:
 		camera_origin = array([0.0, -5.0, 1.0])
 		plane_height = 0.8
 		pof_distance = 5.5
-		aperture_size = 0.08 #0.05 #0.4
+		aperture_size = 0.05 #0.05 #0.4
 		for y in xrange(HEIGHT):
 			pygame.draw.line(screen, (255, 0, 0), (0, y+1), (WIDTH-1, y+1))
 			for x in xrange(WIDTH):
