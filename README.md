@@ -1,5 +1,5 @@
 A simple Python raytracer I challenged myself to write in an hour.
-The following two images are from a version that was committed 59 minutes and 54 seconds after I started the timer (although their actual renders took longer).
+The following two images are from a version that was committed 59 minutes and 54 seconds after I started the timer (I started their renders before the time was up, although their actual renders completed after time was up for changes).
 The images thereafter have additional changes in the code.
 
 An 800x800 render done in about 10 minutes, with four objects and three lights, with a recursion limit of 2:
