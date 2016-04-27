@@ -1,10 +1,10 @@
 #!/usr/bin/python
 
-import math
+import math, random
 import numpy
 from numpy import linalg, array
 
-WIDTH, HEIGHT = 200, 200
+WIDTH, HEIGHT = 100, 100
 
 def normalized(x):
 	return x / linalg.norm(x)
@@ -23,6 +23,7 @@ class Light:
 
 class Material:
 	def __init__(self):
+		# TODO: Make this actually do anything.
 		pass
 
 class Sphere:
@@ -60,6 +61,8 @@ class Plane:
 		return Hit(hit, ray.direction, self.normal, reflection, approach_distance)
 
 class Scene:
+	dof_passes = 16
+
 	def __init__(self):
 		self.objects = []
 		self.lights = []
@@ -91,29 +94,49 @@ class Scene:
 				phong_coef = max(0.0, hit.reflection.dot(shadow_ray.direction))**15.0
 				energy += raw_energy * (lambertian_coef + phong_coef)
 		# If we have recursions left do an idea reflection.
+		if recursions > 0:
+			reflection_ray = Ray(hit.point, hit.reflection)
+			energy += 0.8 * self.color_ray(reflection_ray, recursions-1)
 		return energy
 
 	def render(self, surface):
 		aspect_ratio = WIDTH / HEIGHT
 		camera_origin = array([0.0, -5.0, 1.0])
 		plane_height = 0.8
+		pof_distance = 5.0
+		aperture_size = 0.2
 		for y in xrange(HEIGHT):
+			pygame.draw.line(screen, (255, 0, 0), (0, y+1), (WIDTH-1, y+1))
 			for x in xrange(WIDTH):
-				ray_direction = array([aspect_ratio * ((x - WIDTH/2.0)/HEIGHT) * plane_height, 1, ((HEIGHT/2.0 - y)/HEIGHT) * plane_height])
-				ray = Ray(camera_origin, ray_direction)
-				energy = self.color_ray(ray, 2)
+				energy = array([0.0, 0.0, 0.0])
+				for dof_pass in xrange(self.dof_passes):
+					x_offset = random.uniform(-aperture_size, aperture_size)
+					y_offset = random.uniform(-aperture_size, aperture_size)
+					ray_direction = array([
+						aspect_ratio * ((x - WIDTH/2.0)/HEIGHT) * plane_height - x_offset / pof_distance,
+						1,
+						((HEIGHT/2.0 - y)/HEIGHT) * plane_height - y_offset / pof_distance,
+					])
+					ray = Ray(camera_origin + array([x_offset, 0, y_offset]), ray_direction)
+					energy += self.color_ray(ray, 2)
 				color = self.energy_to_color(energy)
 				surface.set_at((x, y), color)
+			pygame.display.update()
 
 	def energy_to_color(self, energy):
-		f = lambda x: int(max(0.0, min(255.0, x*255.0)))
+		gain = 255.0 / self.dof_passes
+		f = lambda x: int(max(0.0, min(255.0, x*gain)))
 		return map(f, energy)
 
 scene = Scene()
 ground_mat = Material()
-scene.objects.append(Sphere(ground_mat, array([0.0, 0.0, 1.0]), 0.8))
+scene.objects.append(Sphere(ground_mat, array([0.0, 0.4, 1.0]), 0.8))
+scene.objects.append(Sphere(ground_mat, array([0.9, -1.0, 0.6]), 0.4))
+scene.objects.append(Sphere(ground_mat, array([-1.1, -0.5, 1.5]), 0.6))
 scene.objects.append(Plane(ground_mat, array([0.0, 0.0, 1.0]), 0.0))
-scene.lights.append(Light(array([-2.0, -2.0, 3.0]), 5 * array([1.0, 1.0, 1.0])))
+scene.lights.append(Light(array([-2.0, -2.0, 3.0]), 5 * array([1.0, 0.2, 0.2])))
+scene.lights.append(Light(array([ 2.0, -2.0, 3.0]), 5 * array([0.2, 1.0, 0.2])))
+scene.lights.append(Light(array([ 0.0,  0.0, 5.0]), 5 * array([0.2, 0.2, 1.0])))
 
 import pygame, time
 pygame.init()
@@ -127,6 +150,9 @@ while True:
 		if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == 27):
 			pygame.quit()
 			exit()
+		if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+			pygame.image.save(screen, "output2.png")
+			print "Saved."
 	pygame.display.update()
 	time.sleep(0.01)
 
