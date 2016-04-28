@@ -61,8 +61,8 @@ class Plane:
 		return Hit(hit, ray.direction, self.normal, reflection, approach_distance)
 
 class Scene:
-	dof_x = 4
-	dof_y = 4
+	dof_x = 3
+	dof_y = 3
 	dof_passes = dof_x * dof_y
 
 	def __init__(self):
@@ -114,8 +114,10 @@ class Scene:
 				for dof_x in xrange(self.dof_x):
 					for dof_y in xrange(self.dof_y):
 						# The random.uniform is to add dither to hide the shifted copies of the image.
-						x_offset = aperture_size * (dof_x - self.dof_x / 2.0) + random.uniform(-aperture_size, aperture_size) / self.dof_x
-						y_offset = aperture_size * (dof_y - self.dof_y / 2.0) + random.uniform(-aperture_size, aperture_size) / self.dof_y
+#						x_offset = aperture_size * (dof_x - self.dof_x / 2.0) + random.uniform(-aperture_size, aperture_size) / self.dof_x
+#						y_offset = aperture_size * (dof_y - self.dof_y / 2.0) + random.uniform(-aperture_size, aperture_size) / self.dof_y
+						x_offset = random.uniform(-aperture_size, aperture_size) / 2.0
+						y_offset = random.uniform(-aperture_size, aperture_size) / 2.0
 						ray_direction = array([
 							aspect_ratio * ((x - WIDTH/2.0)/HEIGHT) * plane_height - x_offset / pof_distance,
 							1,
